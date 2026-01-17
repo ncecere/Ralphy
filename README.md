@@ -127,14 +127,14 @@ ralphy [flags]
 
 ## Configuration
 
-Ralphy supports configuration via:
-1. Command-line flags (highest priority)
-2. Environment variables
-3. Configuration file (lowest priority)
+Ralphy supports configuration via (in order of priority):
+1. **Command-line flags** (highest priority)
+2. **Environment variables**
+3. **Configuration file** (lowest priority)
 
 ### Configuration File
 
-Create a `ralphy.yaml` in your project root:
+Create a `ralphy.yaml` in your project root. See [ralphy.yaml](ralphy.yaml) for a complete example.
 
 ```yaml
 # AI engine: claude, opencode, cursor, codex
@@ -165,19 +165,61 @@ pr_draft: false
 # GitHub integration
 github_repo: ""
 github_label: ""
-github_token: ""  # or use GITHUB_TOKEN/GH_TOKEN env var
+github_token: ""
 ```
 
 ### Environment Variables
 
 All configuration options can be set via environment variables with the `RALPHY_` prefix:
 
+| Environment Variable | Description |
+|---------------------|-------------|
+| `RALPHY_AI_ENGINE` | AI engine to use (`claude`, `opencode`, `cursor`, `codex`) |
+| `RALPHY_PRD_FILE` | Path to PRD markdown file |
+| `RALPHY_SKIP_TESTS` | Skip running tests (`true`/`false`) |
+| `RALPHY_SKIP_LINT` | Skip linting (`true`/`false`) |
+| `RALPHY_DRY_RUN` | Preview mode without execution (`true`/`false`) |
+| `RALPHY_MAX_ITERATIONS` | Maximum iterations (0 = unlimited) |
+| `RALPHY_MAX_RETRIES` | Max retries per task |
+| `RALPHY_RETRY_DELAY` | Seconds between retries |
+| `RALPHY_VERBOSE` | Enable debug output (`true`/`false`) |
+| `RALPHY_PARALLEL` | Enable parallel execution (`true`/`false`) |
+| `RALPHY_MAX_PARALLEL` | Max concurrent tasks |
+| `RALPHY_BRANCH_PER_TASK` | Create branch per task (`true`/`false`) |
+| `RALPHY_BASE_BRANCH` | Base branch for task branches |
+| `RALPHY_CREATE_PR` | Create PRs after tasks (`true`/`false`) |
+| `RALPHY_PR_DRAFT` | Create PRs as drafts (`true`/`false`) |
+| `RALPHY_GITHUB_REPO` | GitHub repo for issues (`owner/repo`) |
+| `RALPHY_GITHUB_LABEL` | Filter issues by label |
+
+### GitHub Authentication
+
+For GitHub integration (fetching issues or creating PRs), Ralphy needs a GitHub token. It checks these sources in order:
+
+1. **`GITHUB_TOKEN`** environment variable (recommended)
+2. **`GH_TOKEN`** environment variable (used by GitHub CLI)
+3. **`github_token`** in `ralphy.yaml` config file
+
 ```bash
-export RALPHY_AI_ENGINE=claude
-export RALPHY_PRD_FILE=tasks.md
-export RALPHY_MAX_RETRIES=5
-export GITHUB_TOKEN=ghp_xxxx  # or GH_TOKEN
+# Option 1: Export token (recommended)
+export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
+
+# Option 2: Use GitHub CLI's token
+# If you've authenticated with `gh auth login`, Ralphy will use GH_TOKEN
+
+# Option 3: Add to ralphy.yaml (not recommended for shared repos)
+# github_token: ghp_xxxxxxxxxxxxxxxxxxxx
 ```
+
+#### Required Token Permissions
+
+| Feature | Required Scopes |
+|---------|-----------------|
+| Fetch issues | `repo` (private) or `public_repo` (public) |
+| Create PRs | `repo` |
+| Close issues | `repo` |
+
+To create a token, visit [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens).
 
 ## Task Formats
 
