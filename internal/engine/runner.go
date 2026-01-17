@@ -78,8 +78,15 @@ func execute(ctx context.Context, cmd *exec.Cmd, engine string, opts RunOptions)
 	}
 	defer outFile.Close()
 
-	cmd.Stdout = outFile
-	cmd.Stderr = outFile
+	// If activity tracker is provided, wrap the writer to track output
+	if opts.Activity != nil {
+		aw := &activityWriter{w: outFile, tracker: opts.Activity}
+		cmd.Stdout = aw
+		cmd.Stderr = aw
+	} else {
+		cmd.Stdout = outFile
+		cmd.Stderr = outFile
+	}
 
 	start := time.Now()
 	if err := cmd.Run(); err != nil {
