@@ -1,0 +1,155 @@
+# GoReleaser configuration
+# See: https://goreleaser.com/customization/
+
+version: 2
+
+project_name: ralphy
+
+before:
+  hooks:
+    - go mod tidy
+    - go generate ./...
+
+builds:
+  - id: ralphy
+    main: ./cmd/ralphy
+    binary: ralphy
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ignore:
+      - goos: windows
+        goarch: arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{.Version}}
+      - -X main.commit={{.Commit}}
+      - -X main.buildTime={{.Date}}
+    mod_timestamp: "{{ .CommitTimestamp }}"
+
+archives:
+  - id: default
+    formats:
+      - tar.gz
+    format_overrides:
+      - goos: windows
+        formats:
+          - zip
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- .Arch }}
+    files:
+      - README.md
+      - LICENSE*
+      - ralphy.yaml
+      - examples/*
+
+checksum:
+  name_template: "checksums.txt"
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  sort: asc
+  use: github
+  filters:
+    exclude:
+      - "^docs:"
+      - "^test:"
+      - "^chore:"
+      - "^ci:"
+      - Merge pull request
+      - Merge branch
+  groups:
+    - title: Features
+      regexp: '^.*?feat(\([[:word:]]+\))??!?:.+$'
+      order: 0
+    - title: Bug Fixes
+      regexp: '^.*?fix(\([[:word:]]+\))??!?:.+$'
+      order: 1
+    - title: Performance
+      regexp: '^.*?perf(\([[:word:]]+\))??!?:.+$'
+      order: 2
+    - title: Others
+      order: 999
+
+release:
+  github:
+    owner: ncecere
+    name: ralphy
+  draft: false
+  prerelease: auto
+  mode: replace
+  header: |
+    ## Ralphy {{ .Tag }}
+
+    Autonomous AI coding loop that runs AI assistants to work through tasks.
+  footer: |
+    ---
+    
+    **Full Changelog**: https://github.com/ncecere/ralphy/compare/{{ .PreviousTag }}...{{ .Tag }}
+
+brews:
+  - name: ralphy
+    repository:
+      owner: ncecere
+      name: homebrew-tap
+      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/ncecere/ralphy
+    description: Autonomous AI coding loop
+    license: MIT
+    install: |
+      bin.install "ralphy"
+    test: |
+      system "#{bin}/ralphy", "--version"
+    # Note: brews is deprecated but homebrew_casks requires a .app bundle
+    # For CLI tools, brews is still the correct choice
+    skip_upload: auto
+
+# Uncomment to enable scoop for Windows
+# scoops:
+#   - repository:
+#       owner: ncecere
+#       name: scoop-bucket
+#     homepage: https://github.com/ncecere/ralphy
+#     description: Autonomous AI coding loop
+#     license: MIT
+
+nfpms:
+  - id: ralphy
+    package_name: ralphy
+    vendor: ncecere
+    homepage: https://github.com/ncecere/ralphy
+    maintainer: Nick Cecere
+    description: Autonomous AI coding loop
+    license: MIT
+    formats:
+      - deb
+      - rpm
+    bindir: /usr/bin
+
+# Docker images (optional, uncomment to enable)
+# dockers:
+#   - image_templates:
+#       - "ghcr.io/ncecere/ralphy:{{ .Tag }}"
+#       - "ghcr.io/ncecere/ralphy:latest"
+#     dockerfile: Dockerfile
+#     build_flag_templates:
+#       - "--label=org.opencontainers.image.created={{.Date}}"
+#       - "--label=org.opencontainers.image.title={{.ProjectName}}"
+#       - "--label=org.opencontainers.image.revision={{.FullCommit}}"
+#       - "--label=org.opencontainers.image.version={{.Version}}"
+
+announce:
+  skip: true
