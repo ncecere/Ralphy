@@ -4,6 +4,10 @@
 # AI engine: claude, opencode, cursor, codex
 ai_engine: claude
 
+# Model to use (optional, uses engine default if not set)
+# Examples: opus, sonnet (Claude), gpt-4o (OpenCode), o3 (Codex)
+model: ""
+
 # Task source: markdown, yaml, github
 prd_source: markdown
 

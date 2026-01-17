@@ -87,6 +87,7 @@ func resolveConflicts(ctx context.Context, cfg config.Config, files []string) bo
 	_, err = engine.Run(ctx, cfg.AIEngine, prompt, engine.RunOptions{
 		WorkDir:    ".",
 		OutputFile: outputFile,
+		Model:      cfg.Model,
 	})
 	if err != nil {
 		return false

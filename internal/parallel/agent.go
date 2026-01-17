@@ -136,6 +136,7 @@ func runAgent(ctx context.Context, cfg config.Config, task tasks.Task, agentNum 
 		engineResult, err := engine.Run(ctx, cfg.AIEngine, promptText, engine.RunOptions{
 			WorkDir:    worktreeDir,
 			OutputFile: outputPath,
+			Model:      cfg.Model,
 		})
 		if err != nil {
 			lastErr = err

@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "0.1.0"
+const Version = "0.2.0"
 
 const (
 	AIEngineClaude   = "claude"
@@ -29,6 +29,7 @@ type Config struct {
 	SkipTests         bool   `mapstructure:"skip_tests"`
 	SkipLint          bool   `mapstructure:"skip_lint"`
 	AIEngine          string `mapstructure:"ai_engine"`
+	Model             string `mapstructure:"model"`
 	DryRun            bool   `mapstructure:"dry_run"`
 	MaxIterations     int    `mapstructure:"max_iterations"`
 	MaxRetries        int    `mapstructure:"max_retries"`
@@ -57,6 +58,7 @@ func DefaultConfig() Config {
 		SkipTests:         false,
 		SkipLint:          false,
 		AIEngine:          AIEngineClaude,
+		Model:             "",
 		DryRun:            false,
 		MaxIterations:     0,
 		MaxRetries:        3,
@@ -120,6 +122,7 @@ func BindFlags(cmd *cobra.Command) {
 	flags.Bool("cursor", false, "Use Cursor agent")
 	flags.Bool("agent", false, "Use Cursor agent")
 	flags.Bool("codex", false, "Use Codex CLI")
+	flags.String("model", "", "Model to use (e.g., opus, sonnet, gpt-4o)")
 
 	flags.Bool("dry-run", defaults.DryRun, "Show what would be done without executing")
 	flags.Int("max-iterations", defaults.MaxIterations, "Stop after N iterations (0 = unlimited)")
@@ -176,6 +179,11 @@ func ApplyFlagOverrides(cmd *cobra.Command, cfg *Config) error {
 	}
 	if engine != "" {
 		cfg.AIEngine = engine
+	}
+
+	if flags.Changed("model") {
+		value, _ := flags.GetString("model")
+		cfg.Model = value
 	}
 
 	if flags.Changed("dry-run") {
@@ -296,6 +304,7 @@ func setDefaults(v *viper.Viper, defaults Config) {
 	v.SetDefault("skip_tests", defaults.SkipTests)
 	v.SetDefault("skip_lint", defaults.SkipLint)
 	v.SetDefault("ai_engine", defaults.AIEngine)
+	v.SetDefault("model", defaults.Model)
 	v.SetDefault("dry_run", defaults.DryRun)
 	v.SetDefault("max_iterations", defaults.MaxIterations)
 	v.SetDefault("max_retries", defaults.MaxRetries)

@@ -86,6 +86,23 @@ ralphy [flags]
 | `--codex` | Use Codex CLI |
 | `--cursor` | Use Cursor agent |
 | `--agent` | Alias for `--cursor` |
+| `--model <name>` | Model to use (e.g., `opus`, `sonnet`, `gpt-4o`) |
+
+#### Model Examples
+
+```bash
+# Claude Code with Opus
+ralphy --claude --model opus
+
+# Claude Code with Sonnet (default)
+ralphy --claude --model sonnet
+
+# OpenCode with GPT-4o
+ralphy --opencode --model gpt-4o
+
+# Codex with a specific model
+ralphy --codex --model o3
+```
 
 ### Task Source Flags
 
@@ -140,6 +157,10 @@ Create a `ralphy.yaml` in your project root. See [ralphy.yaml](ralphy.yaml) for 
 # AI engine: claude, opencode, cursor, codex
 ai_engine: claude
 
+# Model to use (optional, uses engine default if not set)
+# Examples: opus, sonnet (Claude), gpt-4o (OpenCode), o3 (Codex)
+model: ""
+
 # Task source
 prd_file: PRD.md
 
@@ -175,6 +196,7 @@ All configuration options can be set via environment variables with the `RALPHY_
 | Environment Variable | Description |
 |---------------------|-------------|
 | `RALPHY_AI_ENGINE` | AI engine to use (`claude`, `opencode`, `cursor`, `codex`) |
+| `RALPHY_MODEL` | Model to use (e.g., `opus`, `sonnet`, `gpt-4o`) |
 | `RALPHY_PRD_FILE` | Path to PRD markdown file |
 | `RALPHY_SKIP_TESTS` | Skip running tests (`true`/`false`) |
 | `RALPHY_SKIP_LINT` | Skip linting (`true`/`false`) |

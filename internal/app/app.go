@@ -159,7 +159,7 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 	var result engine.RunResult
 	var lastErr error
 	for attempt := 1; attempt <= cfg.MaxRetries; attempt++ {
-		result, err = engine.Run(ctx, cfg.AIEngine, promptText, engine.RunOptions{WorkDir: ".", OutputFile: outputFile})
+		result, err = engine.Run(ctx, cfg.AIEngine, promptText, engine.RunOptions{WorkDir: ".", OutputFile: outputFile, Model: cfg.Model})
 		if err != nil {
 			lastErr = err
 			spinner.SetStep("Retrying")

@@ -5,6 +5,7 @@ import "time"
 type RunOptions struct {
 	WorkDir    string
 	OutputFile string
+	Model      string
 }
 
 type RunResult struct {
