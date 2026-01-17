@@ -19,8 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ```bash
 ralphy --claude --model opus
-ralphy --opencode --model gpt-4o
-ralphy --codex --model o3
+ralphy --claude --model claude-sonnet-4-5-20250929
+ralphy --opencode --model anthropic/claude-sonnet-4-5
+ralphy --opencode --model openai/gpt-5.2
 ```
 
 ## [0.1.0] - 2025-01-17

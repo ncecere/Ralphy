@@ -86,23 +86,25 @@ ralphy [flags]
 | `--codex` | Use Codex CLI |
 | `--cursor` | Use Cursor agent |
 | `--agent` | Alias for `--cursor` |
-| `--model <name>` | Model to use (e.g., `opus`, `sonnet`, `gpt-4o`) |
+| `--model <name>` | Model to use (passed directly to the AI engine) |
 
 #### Model Examples
 
 ```bash
-# Claude Code with Opus
+# Claude Code - use alias or full model name
 ralphy --claude --model opus
-
-# Claude Code with Sonnet (default)
 ralphy --claude --model sonnet
+ralphy --claude --model claude-sonnet-4-5-20250929
 
-# OpenCode with GPT-4o
-ralphy --opencode --model gpt-4o
+# OpenCode - use provider/model format
+ralphy --opencode --model anthropic/claude-sonnet-4-5
+ralphy --opencode --model openai/gpt-5.2
 
-# Codex with a specific model
-ralphy --codex --model o3
+# Codex
+ralphy --codex --model o4-mini
 ```
+
+Run `claude --help`, `opencode models`, or `codex --help` to see available models for each engine.
 
 ### Task Source Flags
 
@@ -158,7 +160,8 @@ Create a `ralphy.yaml` in your project root. See [ralphy.yaml](ralphy.yaml) for 
 ai_engine: claude
 
 # Model to use (optional, uses engine default if not set)
-# Examples: opus, sonnet (Claude), gpt-4o (OpenCode), o3 (Codex)
+# Claude: opus, sonnet, or full name like claude-sonnet-4-5-20250929
+# OpenCode: anthropic/claude-sonnet-4-5, openai/gpt-5.2
 model: ""
 
 # Task source

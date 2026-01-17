@@ -5,7 +5,8 @@
 ai_engine: claude
 
 # Model to use (optional, uses engine default if not set)
-# Examples: opus, sonnet (Claude), gpt-4o (OpenCode), o3 (Codex)
+# Claude: opus, sonnet, or full name like claude-sonnet-4-5-20250929
+# OpenCode: anthropic/claude-sonnet-4-5, openai/gpt-5.2
 model: ""
 
 # Task source: markdown, yaml, github
