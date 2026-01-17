@@ -13,18 +13,41 @@ Autonomous AI coding loop that runs AI assistants to work through tasks until a 
 
 ## Installation
 
-### From Source
+### Download Binary (Recommended)
+
+Download the latest release for your platform from [GitHub Releases](https://github.com/ncecere/ralphy/releases/latest).
+
+```bash
+# macOS (Apple Silicon)
+curl -L https://github.com/ncecere/ralphy/releases/latest/download/ralphy_darwin_arm64.tar.gz | tar xz
+sudo mv ralphy /usr/local/bin/
+
+# macOS (Intel)
+curl -L https://github.com/ncecere/ralphy/releases/latest/download/ralphy_darwin_amd64.tar.gz | tar xz
+sudo mv ralphy /usr/local/bin/
+
+# Linux (amd64)
+curl -L https://github.com/ncecere/ralphy/releases/latest/download/ralphy_linux_amd64.tar.gz | tar xz
+sudo mv ralphy /usr/local/bin/
+
+# Linux (arm64)
+curl -L https://github.com/ncecere/ralphy/releases/latest/download/ralphy_linux_arm64.tar.gz | tar xz
+sudo mv ralphy /usr/local/bin/
+```
+
+### Go Install
 
 ```bash
 go install github.com/ncecere/ralphy/cmd/ralphy@latest
 ```
 
-### Build Locally
+### Build from Source
 
 ```bash
 git clone https://github.com/ncecere/ralphy.git
 cd ralphy
 make build
+sudo cp build/ralphy /usr/local/bin/
 ```
 
 ## Quick Start

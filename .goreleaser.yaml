@@ -99,25 +99,23 @@ release:
     
     **Full Changelog**: https://github.com/ncecere/ralphy/compare/{{ .PreviousTag }}...{{ .Tag }}
 
-brews:
-  - name: ralphy
-    repository:
-      owner: ncecere
-      name: homebrew-tap
-      token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
-    directory: Formula
-    homepage: https://github.com/ncecere/ralphy
-    description: Autonomous AI coding loop
-    license: MIT
-    install: |
-      bin.install "ralphy"
-    test: |
-      system "#{bin}/ralphy", "--version"
-    # Note: brews is deprecated but homebrew_casks requires a .app bundle
-    # For CLI tools, brews is still the correct choice
-    skip_upload: auto
+# Uncomment to enable Homebrew tap (requires HOMEBREW_TAP_TOKEN secret)
+# brews:
+#   - name: ralphy
+#     repository:
+#       owner: ncecere
+#       name: homebrew-tap
+#       token: "{{ .Env.HOMEBREW_TAP_TOKEN }}"
+#     directory: Formula
+#     homepage: https://github.com/ncecere/ralphy
+#     description: Autonomous AI coding loop
+#     license: MIT
+#     install: |
+#       bin.install "ralphy"
+#     test: |
+#       system "#{bin}/ralphy", "--version"
 
-# Uncomment to enable scoop for Windows
+# Uncomment to enable Scoop bucket for Windows
 # scoops:
 #   - repository:
 #       owner: ncecere

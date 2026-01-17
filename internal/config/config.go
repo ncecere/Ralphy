@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "3.1.0"
+const Version = "0.1.0"
 
 const (
 	AIEngineClaude   = "claude"
