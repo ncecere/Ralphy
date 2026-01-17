@@ -1,6 +1,6 @@
-# Binaries
-ralphy
-ralphy-bin
+# Binaries (root level only)
+/ralphy
+/ralphy-bin
 *.exe
 *.exe~
 *.dll
