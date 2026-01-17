@@ -3,33 +3,45 @@
 # This format is useful when you need more structured task metadata.
 # Ralphy preserves YAML formatting when updating task statuses.
 #
-# Status values: pending, in_progress, done, skipped
+# Supported fields:
+#   title: (required) Task description
+#   completed: true/false - whether task is done
+#   parallel_group: integer - tasks with same group run concurrently
+#
+# Additional metadata fields (for documentation, not used by ralphy):
+#   priority, tags, notes, depends_on, subtasks, acceptance_criteria
 
 project: example-api
 version: "1.0"
 
 tasks:
-  # Setup phase
+  # ===========================================================================
+  # PARALLEL GROUP 1: Setup phase
+  # These tasks have no dependencies and can run concurrently
+  # ===========================================================================
   - title: Initialize Go module and project structure
-    status: pending
-    priority: high
+    completed: false
+    parallel_group: 1
     tags: [setup, infrastructure]
 
   - title: Set up configuration management with Viper
-    status: pending
-    priority: high
+    completed: false
+    parallel_group: 1
     tags: [setup, config]
 
   - title: Create database connection pool with PostgreSQL
-    status: pending
-    priority: high
+    completed: false
+    parallel_group: 1
     tags: [setup, database]
     notes: Use pgxpool for connection pooling
 
-  # Authentication phase
+  # ===========================================================================
+  # PARALLEL GROUP 2: Authentication phase
+  # These run after setup completes. Registration and login can run in parallel.
+  # ===========================================================================
   - title: Implement user registration endpoint (POST /api/auth/register)
-    status: pending
-    priority: high
+    completed: false
+    parallel_group: 2
     tags: [auth, api]
     acceptance_criteria:
       - Validate email format
@@ -37,26 +49,30 @@ tasks:
       - Return JWT token on success
 
   - title: Implement user login endpoint with JWT tokens
-    status: pending
-    priority: high
+    completed: false
+    parallel_group: 2
     tags: [auth, api]
 
+  # ===========================================================================
+  # PARALLEL GROUP 3: Auth middleware (depends on login being done)
+  # ===========================================================================
   - title: Add middleware for JWT token validation
-    status: pending
-    priority: medium
+    completed: false
+    parallel_group: 3
     tags: [auth, middleware]
-    depends_on:
-      - Implement user login endpoint with JWT tokens
 
   - title: Implement password reset flow
-    status: pending
-    priority: low
+    completed: false
+    parallel_group: 3
     tags: [auth, api]
 
-  # Core features
+  # ===========================================================================
+  # PARALLEL GROUP 4: Core features (depend on auth middleware)
+  # These can all run in parallel since they're independent features
+  # ===========================================================================
   - title: Create todo CRUD endpoints
-    status: pending
-    priority: high
+    completed: false
+    parallel_group: 4
     tags: [api, todos]
     subtasks:
       - GET /api/todos - list all todos
@@ -66,39 +82,44 @@ tasks:
       - DELETE /api/todos/:id - delete todo
 
   - title: Add pagination support for list endpoints
-    status: pending
-    priority: medium
+    completed: false
+    parallel_group: 4
     tags: [api, pagination]
 
   - title: Implement todo filtering by status and due date
-    status: pending
-    priority: medium
+    completed: false
+    parallel_group: 4
     tags: [api, filtering]
 
   - title: Add todo sharing between users
-    status: pending
-    priority: low
+    completed: false
+    parallel_group: 4
     tags: [api, sharing]
 
-  # Polish phase
+  # ===========================================================================
+  # PARALLEL GROUP 5: Polish phase (after core features)
+  # ===========================================================================
   - title: Add request validation with detailed error messages
-    status: pending
-    priority: medium
+    completed: false
+    parallel_group: 5
     tags: [api, validation]
 
   - title: Implement rate limiting middleware
-    status: pending
-    priority: medium
+    completed: false
+    parallel_group: 5
     tags: [middleware, security]
 
   - title: Add OpenAPI/Swagger documentation
-    status: pending
-    priority: low
+    completed: false
+    parallel_group: 5
     tags: [docs, api]
 
+  # ===========================================================================
+  # PARALLEL GROUP 6: Testing (after everything else)
+  # ===========================================================================
   - title: Write integration tests for all endpoints
-    status: pending
-    priority: high
+    completed: false
+    parallel_group: 6
     tags: [testing]
 
 # Metadata for tracking
