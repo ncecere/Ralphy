@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "0.4.1"
+const Version = "0.4.2"
 
 // GlobalConfigDir returns the global config directory path.
 func GlobalConfigDir() string {
@@ -53,6 +53,22 @@ type EngineModels struct {
 	Cursor   string `mapstructure:"cursor"`
 }
 
+// PRConfig holds pull request configuration.
+type PRConfig struct {
+	// Template for PR body. Supports variables: {{.Task}}, {{.Engine}}, {{.Model}},
+	// {{.InputTokens}}, {{.OutputTokens}}, {{.Cost}}, {{.Duration}}, {{.FilesChanged}}
+	BodyTemplate string `mapstructure:"body_template"`
+
+	// Labels to add to the PR
+	Labels []string `mapstructure:"labels"`
+
+	// Reviewers to request (GitHub usernames)
+	Reviewers []string `mapstructure:"reviewers"`
+
+	// Assignees for the PR (GitHub usernames)
+	Assignees []string `mapstructure:"assignees"`
+}
+
 type Config struct {
 	SkipTests         bool   `mapstructure:"skip_tests"`
 	SkipLint          bool   `mapstructure:"skip_lint"`
@@ -68,6 +84,12 @@ type Config struct {
 	CreatePR      bool   `mapstructure:"create_pr"`
 	BaseBranch    string `mapstructure:"base_branch"`
 	PRDraft       bool   `mapstructure:"pr_draft"`
+
+	// PR configuration
+	PR PRConfig `mapstructure:"pr"`
+
+	// Log file for run history (JSON format)
+	LogFile string `mapstructure:"log_file"`
 
 	Parallel    bool `mapstructure:"parallel"`
 	MaxParallel int  `mapstructure:"max_parallel"`
@@ -217,6 +239,8 @@ func BindFlags(cmd *cobra.Command) {
 	flags.String("github-label", defaults.GitHubLabel, "Filter GitHub issues by label")
 
 	flags.BoolP("verbose", "v", defaults.Verbose, "Show debug output")
+
+	flags.String("log-file", defaults.LogFile, "Write run history to file (JSON format)")
 }
 
 func ApplyFlagOverrides(cmd *cobra.Command, cfg *Config) error {
@@ -339,6 +363,11 @@ func ApplyFlagOverrides(cmd *cobra.Command, cfg *Config) error {
 	if flags.Changed("verbose") {
 		value, _ := flags.GetBool("verbose")
 		cfg.Verbose = value
+	}
+
+	if flags.Changed("log-file") {
+		value, _ := flags.GetString("log-file")
+		cfg.LogFile = value
 	}
 
 	return nil

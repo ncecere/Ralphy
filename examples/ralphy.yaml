@@ -123,3 +123,51 @@ create_pr: false
 # Create PRs as drafts
 # Requires: create_pr: true
 pr_draft: false
+
+# ==============================================================================
+# PR Configuration
+# ==============================================================================
+
+# Settings for pull request creation
+pr:
+  # Custom template for PR body (uses Go text/template syntax)
+  # Available variables:
+  #   {{.Task}}         - Task title
+  #   {{.Engine}}       - AI engine used (claude, opencode, etc.)
+  #   {{.Model}}        - Model used
+  #   {{.InputTokens}}  - Input tokens consumed
+  #   {{.OutputTokens}} - Output tokens generated
+  #   {{.TotalTokens}}  - Total tokens
+  #   {{.Cost}}         - Estimated cost
+  #   {{.Duration}}     - Task duration
+  #   {{.FilesChanged}} - Number of files changed
+  #   {{.Branch}}       - Branch name
+  #   {{.BaseBranch}}   - Base branch name
+  body_template: ""
+
+  # Labels to add to the PR (must exist in the repo)
+  labels: []
+  # labels:
+  #   - "ai-generated"
+  #   - "needs-review"
+
+  # GitHub usernames to request as reviewers
+  reviewers: []
+  # reviewers:
+  #   - "teammate1"
+  #   - "teammate2"
+
+  # GitHub usernames to assign to the PR
+  assignees: []
+
+# ==============================================================================
+# Observability
+# ==============================================================================
+
+# Write run history to a log file (JSON/NDJSON format)
+# Each run appends a JSON line with:
+#   - Timestamp, version, engine, model
+#   - Per-task: status, tokens, cost, duration, branch, PR URL
+#   - Summary: total tasks, succeeded, failed, total cost
+log_file: ""
+# log_file: "ralphy-runs.log"

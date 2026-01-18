@@ -199,6 +199,12 @@ When running in parallel mode, Ralphy:
 | `--create-pr` | Create a pull request after each task |
 | `--draft-pr` | Create PRs as drafts |
 
+#### Observability Flags
+
+| Flag | Description |
+|------|-------------|
+| `--log-file <path>` | Write run history to file (JSON/NDJSON format) |
+
 ---
 
 ### Interactive Setup: `ralphy setup`
@@ -605,6 +611,37 @@ create_pr: false
 
 # Create PRs as drafts
 pr_draft: false
+
+# ==============================================================================
+# PR Configuration
+# ==============================================================================
+
+# PR settings (used when create_pr is true)
+pr:
+  # Custom PR body template (uses Go text/template syntax)
+  # Available variables: {{.Task}}, {{.Engine}}, {{.Model}}, {{.InputTokens}},
+  # {{.OutputTokens}}, {{.TotalTokens}}, {{.Cost}}, {{.Duration}}, {{.FilesChanged}}
+  body_template: ""
+
+  # Labels to add to the PR
+  labels:
+    - "ai-generated"
+    - "needs-review"
+
+  # GitHub usernames to request as reviewers
+  reviewers:
+    - "teammate1"
+
+  # GitHub usernames to assign to the PR
+  assignees: []
+
+# ==============================================================================
+# Observability
+# ==============================================================================
+
+# Write run history to file (JSON/NDJSON format)
+# Each run appends a JSON object with task results, tokens, cost, duration
+log_file: ""
 ```
 
 ### Environment Variables
@@ -630,6 +667,7 @@ All configuration options can be set via environment variables with the `RALPHY_
 | `RALPHY_BASE_BRANCH` | `base_branch` | Base branch for task branches |
 | `RALPHY_CREATE_PR` | `create_pr` | Create PRs (`true`/`false`) |
 | `RALPHY_PR_DRAFT` | `pr_draft` | Draft PRs (`true`/`false`) |
+| `RALPHY_LOG_FILE` | `log_file` | Path to run history log file |
 | `RALPHY_GITHUB_REPO` | `github_repo` | GitHub repo (`owner/repo`) |
 | `RALPHY_GITHUB_LABEL` | `github_label` | GitHub issue label filter |
 | `GITHUB_TOKEN` | `github_token` | GitHub authentication token |

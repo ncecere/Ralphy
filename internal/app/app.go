@@ -15,6 +15,7 @@ import (
 	"github.com/ncecere/ralphy/internal/notify"
 	"github.com/ncecere/ralphy/internal/parallel"
 	"github.com/ncecere/ralphy/internal/prompt"
+	"github.com/ncecere/ralphy/internal/runlog"
 	"github.com/ncecere/ralphy/internal/tasks"
 	"github.com/ncecere/ralphy/internal/ui"
 	"github.com/ncecere/ralphy/internal/utils"
@@ -46,17 +47,27 @@ func Run(ctx context.Context, cfg config.Config) error {
 		cfg.BaseBranch, _ = git.CurrentBranch()
 	}
 
+	// Initialize run logger if log file is configured
+	logger := runlog.New(cfg.LogFile)
+	if logger != nil {
+		logger.SetRunInfo(config.Version, cfg.AIEngine, cfg.ResolvedModel(), cfg.PRDSource, cfg.PRDFile)
+		defer logger.Write()
+	}
+
 	ui.Banner(cfg.AIEngine, cfg.PRDSource, prdLabel(cfg))
 
 	if cfg.Parallel {
-		return runParallel(ctx, cfg, source)
+		return runParallel(ctx, cfg, source, logger)
 	}
 
 	t := &totals{}
 
 	for {
 		t.iterations++
-		resultCode, err := runSingleTask(ctx, cfg, source, t)
+		resultCode, taskEntry, err := runSingleTask(ctx, cfg, source, t)
+		if logger != nil && taskEntry != nil {
+			logger.AddTask(*taskEntry)
+		}
 		if err != nil {
 			ui.Error(err.Error())
 			return err
@@ -81,7 +92,7 @@ func Run(ctx context.Context, cfg config.Config) error {
 	}
 }
 
-func runParallel(ctx context.Context, cfg config.Config, source tasks.Source) error {
+func runParallel(ctx context.Context, cfg config.Config, source tasks.Source, logger *runlog.Logger) error {
 	totals, err := parallel.Run(ctx, cfg, source)
 	if err != nil {
 		return err
@@ -100,19 +111,24 @@ const (
 	taskResultAllDone
 )
 
-func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, t *totals) (int, error) {
+func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, t *totals) (int, *runlog.TaskEntry, error) {
 	summary, err := source.Summary(ctx)
 	if err != nil {
-		return taskResultFailed, err
+		return taskResultFailed, nil, err
 	}
 
 	currentTask, err := source.Next(ctx)
 	if err != nil {
-		return taskResultFailed, err
+		return taskResultFailed, nil, err
 	}
 	if currentTask == nil {
-		return taskResultAllDone, nil
+		return taskResultAllDone, nil, nil
 	}
+
+	taskEntry := &runlog.TaskEntry{
+		Title: currentTask.Title,
+	}
+	taskStart := time.Now()
 
 	issueBody := ""
 	if cfg.PRDSource == config.PRDSourceGitHub {
@@ -126,6 +142,7 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 	var branchName string
 	if cfg.BranchPerTask {
 		branchName = git.TaskBranchName(currentTask.Title)
+		taskEntry.Branch = branchName
 		ui.Info("Working on branch: " + branchName)
 		stashed, _ := git.StashPush("ralphy-autostash")
 		if err := git.CreateBranch(branchName, cfg.BaseBranch); err != nil {
@@ -143,13 +160,16 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 		ui.Info("DRY RUN - Would execute:")
 		println(promptText)
 		returnToBase(cfg)
-		return taskResultSuccess, nil
+		taskEntry.Status = "skipped"
+		return taskResultSuccess, taskEntry, nil
 	}
 
 	outputFile, err := tempOutputFile()
 	if err != nil {
 		returnToBase(cfg)
-		return taskResultFailed, err
+		taskEntry.Status = "failed"
+		taskEntry.Error = err.Error()
+		return taskResultFailed, taskEntry, err
 	}
 	defer os.Remove(outputFile)
 
@@ -160,10 +180,12 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 
 	var result engine.RunResult
 	var lastErr error
+	retries := 0
 	for attempt := 1; attempt <= cfg.MaxRetries; attempt++ {
 		result, err = engine.Run(ctx, cfg.AIEngine, promptText, engine.RunOptions{WorkDir: ".", OutputFile: outputFile, Model: cfg.ResolvedModel(), Activity: activity})
 		if err != nil {
 			lastErr = err
+			retries++
 			spinner.SetStep("Retrying")
 			if attempt < cfg.MaxRetries {
 				utils.Sleep(time.Duration(cfg.RetryDelaySeconds) * time.Second)
@@ -172,7 +194,11 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 			spinner.Stop()
 			ui.TaskFailed(currentTask.Title)
 			returnToBase(cfg)
-			return taskResultFailed, err
+			taskEntry.Status = "failed"
+			taskEntry.Error = err.Error()
+			taskEntry.Retries = retries
+			taskEntry.DurationSecs = time.Since(taskStart).Seconds()
+			return taskResultFailed, taskEntry, err
 		}
 		lastErr = nil
 		break
@@ -183,7 +209,11 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 	if lastErr != nil {
 		ui.TaskFailed(currentTask.Title)
 		returnToBase(cfg)
-		return taskResultFailed, lastErr
+		taskEntry.Status = "failed"
+		taskEntry.Error = lastErr.Error()
+		taskEntry.Retries = retries
+		taskEntry.DurationSecs = time.Since(taskStart).Seconds()
+		return taskResultFailed, taskEntry, lastErr
 	}
 
 	ui.TaskDone(currentTask.Title)
@@ -199,21 +229,52 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 		t.cost += result.ActualCost
 	}
 
+	// Update task entry with results
+	taskEntry.Status = "success"
+	taskEntry.InputTokens = result.InputTokens
+	taskEntry.OutputTokens = result.OutputTokens
+	taskEntry.Cost = result.ActualCost
+	taskEntry.Retries = retries
+	taskEntry.DurationSecs = time.Since(taskStart).Seconds()
+
 	// Mark task complete in source (YAML, Markdown, or GitHub)
 	_ = source.MarkComplete(ctx, *currentTask)
 
 	if cfg.CreatePR && branchName != "" {
 		if err := git.Push(branchName); err == nil {
-			prURL, err := github.CreatePR(ctx, github.PROptions{
-				Title: currentTask.Title,
-				Body:  "Automated PR created by Ralphy",
-				Head:  branchName,
-				Base:  cfg.BaseBranch,
-				Draft: cfg.PRDraft,
-				Token: cfg.GitHubToken,
-			})
+			// Get files changed for PR template
+			filesChanged, _ := github.GetFilesChanged(cfg.BaseBranch)
+
+			// Build PR with template data
+			prOpts := github.PROptions{
+				Title:        currentTask.Title,
+				Head:         branchName,
+				Base:         cfg.BaseBranch,
+				Draft:        cfg.PRDraft,
+				Token:        cfg.GitHubToken,
+				Labels:       cfg.PR.Labels,
+				Reviewers:    cfg.PR.Reviewers,
+				Assignees:    cfg.PR.Assignees,
+				BodyTemplate: cfg.PR.BodyTemplate,
+				TemplateData: &github.PRTemplateData{
+					Task:         currentTask.Title,
+					Engine:       cfg.AIEngine,
+					Model:        cfg.ResolvedModel(),
+					InputTokens:  result.InputTokens,
+					OutputTokens: result.OutputTokens,
+					TotalTokens:  result.InputTokens + result.OutputTokens,
+					Cost:         result.ActualCost,
+					Duration:     result.Duration,
+					FilesChanged: filesChanged,
+					Branch:       branchName,
+					BaseBranch:   cfg.BaseBranch,
+				},
+			}
+
+			prURL, err := github.CreatePR(ctx, prOpts)
 			if err == nil {
 				ui.Success("PR created: " + prURL)
+				taskEntry.PRUrl = prURL
 			} else {
 				ui.Warn("Failed to create PR: " + err.Error())
 			}
@@ -224,11 +285,11 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 
 	remaining, err := source.Summary(ctx)
 	if err != nil {
-		return taskResultFailed, err
+		return taskResultFailed, taskEntry, err
 	}
 
 	if remaining.Remaining == 0 {
-		return taskResultAllDone, nil
+		return taskResultAllDone, taskEntry, nil
 	}
 
 	rawOutput := result.RawOutput
@@ -236,7 +297,7 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 		ui.Debug(cfg.Verbose, "AI claimed completion but tasks remain, continuing...")
 	}
 
-	return taskResultSuccess, nil
+	return taskResultSuccess, taskEntry, nil
 }
 
 func returnToBase(cfg config.Config) {

@@ -7,6 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.2] - 2025-01-18
+
+### Added
+
+- **PR Templates** - Customizable PR body with template variables
+  - Variables: `{{.Task}}`, `{{.Engine}}`, `{{.Model}}`, `{{.InputTokens}}`, `{{.OutputTokens}}`, `{{.Cost}}`, `{{.Duration}}`, `{{.FilesChanged}}`
+  - Default template shows task details in a formatted table
+  - Custom templates via `pr.body_template` in config
+
+- **PR Metadata** - Configure labels, reviewers, and assignees
+  ```yaml
+  pr:
+    labels: ["ai-generated", "needs-review"]
+    reviewers: ["teammate1", "teammate2"]
+    assignees: ["myself"]
+  ```
+
+- **Run History Logging** - Track run metrics over time
+  - `--log-file <path>` flag to write run history (JSON/NDJSON format)
+  - Logs task status, tokens, cost, duration, retries, PR URLs
+  - Aggregate summary per run
+
+### Changed
+
+- PR creation now includes richer metadata from task execution
+- Task execution tracks more detailed metrics for logging
+
 ## [0.4.1] - 2025-01-18
 
 ### Added
@@ -183,7 +210,8 @@ ralphy --codex --model o4-mini
 - Example tasks.yaml file with parallel groups
 - Configuration file reference
 
-[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.4.1...HEAD
+[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.4.2...HEAD
+[0.4.2]: https://github.com/ncecere/ralphy/compare/v0.4.1...v0.4.2
 [0.4.1]: https://github.com/ncecere/ralphy/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ncecere/ralphy/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/ncecere/ralphy/compare/v0.3.1...v0.3.2
