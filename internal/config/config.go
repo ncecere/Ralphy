@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "0.4.0"
+const Version = "0.4.1"
 
 // GlobalConfigDir returns the global config directory path.
 func GlobalConfigDir() string {

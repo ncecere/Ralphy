@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.1] - 2025-01-18
+
+### Added
+
+- **`ralphy setup` command** - Interactive setup wizard
+  - Step-by-step configuration with prompts
+  - Shows which AI engines are installed (✓/○ indicators)
+  - Lets you select default engine and model
+  - Configure task source (markdown/yaml/github)
+  - Set up Git workflow options (branch-per-task, PRs)
+  - Configure parallel execution settings
+  - `--local` flag to create project config instead of global
+  - Summary screen before saving
+  - Shows next steps after completion
+
 ## [0.4.0] - 2025-01-18
 
 ### Added
@@ -168,7 +183,8 @@ ralphy --codex --model o4-mini
 - Example tasks.yaml file with parallel groups
 - Configuration file reference
 
-[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.4.1...HEAD
+[0.4.1]: https://github.com/ncecere/ralphy/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/ncecere/ralphy/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/ncecere/ralphy/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/ncecere/ralphy/compare/v0.3.0...v0.3.1

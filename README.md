@@ -20,6 +20,7 @@ Autonomous AI coding loop that runs AI assistants (Claude Code, OpenCode, Codex,
 - [Quick Start](#quick-start)
 - [Commands](#commands)
   - [Main Command](#main-command-ralphy)
+  - [Interactive Setup](#interactive-setup-ralphy-setup)
   - [Initialize Config](#initialize-config-ralphy-init)
   - [List Models](#list-models-ralphy-models)
   - [Doctor](#check-dependencies-ralphy-doctor)
@@ -200,9 +201,65 @@ When running in parallel mode, Ralphy:
 
 ---
 
+### Interactive Setup: `ralphy setup`
+
+Interactive wizard to configure Ralphy step by step.
+
+```bash
+ralphy setup [flags]
+```
+
+The wizard guides you through:
+1. Choosing a default AI engine (shows which are installed)
+2. Selecting a default model for that engine
+3. Configuring task source preferences
+4. Setting up Git workflow options
+5. Configuring parallel execution and workflow settings
+
+#### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--local` | Save to project config (`./ralphy.yaml`) instead of global |
+
+#### Example Session
+
+```
+╔══════════════════════════════════════════╗
+║         Ralphy Setup Wizard              ║
+╚══════════════════════════════════════════╝
+
+Step 1: Choose Default AI Engine
+---------------------------------
+
+  1) ✓ claude       Claude Code by Anthropic
+  2) ✓ opencode     OpenCode - multi-provider AI coding
+  3) ✓ codex        OpenAI Codex CLI
+  4) ○ cursor       Cursor AI editor
+
+Select engine [1-4, default 1]: 1
+Selected: claude
+
+Step 2: Choose Default Model
+----------------------------
+
+  1) opus
+  2) sonnet
+  3) haiku
+
+Select model (or type custom) [1-3 or 'c' for custom]: 2
+Selected: sonnet
+
+...
+
+✓ Configuration saved!
+```
+
+---
+
 ### Initialize Config: `ralphy init`
 
-Create a Ralphy configuration file.
+Create a Ralphy configuration file (non-interactive).
 
 ```bash
 ralphy init [flags]
