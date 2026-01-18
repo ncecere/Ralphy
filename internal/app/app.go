@@ -199,9 +199,8 @@ func runSingleTask(ctx context.Context, cfg config.Config, source tasks.Source, 
 		t.cost += result.ActualCost
 	}
 
-	if cfg.PRDSource == config.PRDSourceGitHub {
-		_ = source.MarkComplete(ctx, *currentTask)
-	}
+	// Mark task complete in source (YAML, Markdown, or GitHub)
+	_ = source.MarkComplete(ctx, *currentTask)
 
 	if cfg.CreatePR && branchName != "" {
 		if err := git.Push(branchName); err == nil {

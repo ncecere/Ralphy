@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.1] - 2025-01-17
+
+### Fixed
+
+- Sequential mode now auto-marks YAML/Markdown tasks as complete after each task
+- Previously only GitHub issues were auto-marked, causing sequential runs to repeat the same task
+
 ## [0.3.0] - 2025-01-17
 
 ### Added
@@ -55,7 +62,8 @@ ralphy --opencode --model openai/gpt-5.2
 - Example PRD.md and tasks.yaml files
 - Configuration file reference
 
-[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.3.1...HEAD
+[0.3.1]: https://github.com/ncecere/ralphy/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ncecere/ralphy/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ncecere/ralphy/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/ncecere/ralphy/releases/tag/v0.1.0
