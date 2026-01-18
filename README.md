@@ -65,7 +65,17 @@ sudo cp build/ralphy /usr/local/bin/
 - [x] Set up project structure (completed)
 ```
 
-2. Run ralphy:
+2. Initialize config (optional):
+
+```bash
+# Create global config
+ralphy init
+
+# Or create project-local config
+ralphy init --local
+```
+
+3. Run ralphy:
 
 ```bash
 ralphy --claude
@@ -149,20 +159,56 @@ Run `claude --help`, `opencode models`, or `codex --help` to see available model
 Ralphy supports configuration via (in order of priority):
 1. **Command-line flags** (highest priority)
 2. **Environment variables**
-3. **Configuration file** (lowest priority)
+3. **Local config** (`./ralphy.yaml`)
+4. **Global config** (`~/.config/ralphy/ralphy.yaml`) (lowest priority)
+
+### Initialize Config
+
+```bash
+# Create global config (~/.config/ralphy/ralphy.yaml)
+ralphy init
+
+# Create project-local config (./ralphy.yaml)
+ralphy init --local
+
+# Set default engine during init
+ralphy init --engine claude --model sonnet
+
+# Overwrite existing config
+ralphy init --force
+```
+
+### List and Set Models
+
+```bash
+# List available models for an engine
+ralphy models --opencode
+ralphy models --claude
+
+# Interactively select and save a default model
+ralphy models --opencode --set-default
+
+# Non-interactively set a default model
+ralphy models --opencode --set-default --model anthropic/claude-sonnet-4-5
+
+# Save to local config instead of global
+ralphy models --claude --set-default --model sonnet --local
+```
 
 ### Configuration File
 
-Create a `ralphy.yaml` in your project root. See [ralphy.yaml](ralphy.yaml) for a complete example.
+Create a `ralphy.yaml` in your project root or use `ralphy init`.
 
 ```yaml
 # AI engine: claude, opencode, cursor, codex
 ai_engine: claude
 
-# Model to use (optional, uses engine default if not set)
-# Claude: opus, sonnet, or full name like claude-sonnet-4-5-20250929
-# OpenCode: anthropic/claude-sonnet-4-5, openai/gpt-5.2
-model: ""
+# Per-engine model defaults
+models:
+  claude: sonnet
+  opencode: anthropic/claude-sonnet-4-5
+  codex: ""
+  cursor: ""
 
 # Task source
 prd_file: PRD.md

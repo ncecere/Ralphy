@@ -1,8 +1,9 @@
 package config
 
 import (
-	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -10,7 +11,26 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "0.3.1"
+const Version = "0.3.2"
+
+// GlobalConfigDir returns the global config directory path.
+func GlobalConfigDir() string {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return ""
+	}
+	return filepath.Join(home, ".config", "ralphy")
+}
+
+// GlobalConfigPath returns the global config file path.
+func GlobalConfigPath() string {
+	return filepath.Join(GlobalConfigDir(), "ralphy.yaml")
+}
+
+// LocalConfigPath returns the local (project) config file path.
+func LocalConfigPath() string {
+	return "ralphy.yaml"
+}
 
 const (
 	AIEngineClaude   = "claude"
@@ -24,6 +44,14 @@ const (
 	PRDSourceYAML     = "yaml"
 	PRDSourceGitHub   = "github"
 )
+
+// EngineModels holds per-engine model defaults.
+type EngineModels struct {
+	Claude   string `mapstructure:"claude"`
+	OpenCode string `mapstructure:"opencode"`
+	Codex    string `mapstructure:"codex"`
+	Cursor   string `mapstructure:"cursor"`
+}
 
 type Config struct {
 	SkipTests         bool   `mapstructure:"skip_tests"`
@@ -50,7 +78,29 @@ type Config struct {
 	GitHubLabel string `mapstructure:"github_label"`
 	GitHubToken string `mapstructure:"github_token"`
 
+	// Per-engine model defaults
+	Models EngineModels `mapstructure:"models"`
+
 	ConfigFile string `mapstructure:"-"`
+}
+
+// ResolvedModel returns the model to use for the current engine.
+// Priority: Model field (from --model flag) > Models.<engine> > empty
+func (c *Config) ResolvedModel() string {
+	if c.Model != "" {
+		return c.Model
+	}
+	switch c.AIEngine {
+	case AIEngineClaude:
+		return c.Models.Claude
+	case AIEngineOpenCode:
+		return c.Models.OpenCode
+	case AIEngineCodex:
+		return c.Models.Codex
+	case AIEngineCursor:
+		return c.Models.Cursor
+	}
+	return ""
 }
 
 func DefaultConfig() Config {
@@ -82,9 +132,7 @@ func Load() (Config, error) {
 	cfg := DefaultConfig()
 
 	v := viper.New()
-	v.SetConfigName("ralphy")
 	v.SetConfigType("yaml")
-	v.AddConfigPath(".")
 	v.SetEnvPrefix("RALPHY")
 	v.SetEnvKeyReplacer(strings.NewReplacer("-", "_", ".", "_"))
 	v.AutomaticEnv()
@@ -92,10 +140,21 @@ func Load() (Config, error) {
 
 	setDefaults(v, cfg)
 
-	if err := v.ReadInConfig(); err != nil {
-		var notFound viper.ConfigFileNotFoundError
-		if !errors.As(err, &notFound) {
-			return cfg, err
+	// Load global config first (lowest priority)
+	globalPath := GlobalConfigPath()
+	if _, err := os.Stat(globalPath); err == nil {
+		v.SetConfigFile(globalPath)
+		if err := v.ReadInConfig(); err != nil {
+			return cfg, fmt.Errorf("reading global config: %w", err)
+		}
+	}
+
+	// Load local config (higher priority, merges with global)
+	localPath := LocalConfigPath()
+	if _, err := os.Stat(localPath); err == nil {
+		v.SetConfigFile(localPath)
+		if err := v.MergeInConfig(); err != nil {
+			return cfg, fmt.Errorf("reading local config: %w", err)
 		}
 	}
 
@@ -321,4 +380,127 @@ func setDefaults(v *viper.Viper, defaults Config) {
 	v.SetDefault("github_repo", defaults.GitHubRepo)
 	v.SetDefault("github_label", defaults.GitHubLabel)
 	v.SetDefault("github_token", defaults.GitHubToken)
+	v.SetDefault("models.claude", defaults.Models.Claude)
+	v.SetDefault("models.opencode", defaults.Models.OpenCode)
+	v.SetDefault("models.codex", defaults.Models.Codex)
+	v.SetDefault("models.cursor", defaults.Models.Cursor)
+}
+
+// SetEngineModel sets the default model for an engine in the specified config file.
+func SetEngineModel(configPath, engine, model string) error {
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.SetConfigFile(configPath)
+
+	// Read existing config if it exists
+	if _, err := os.Stat(configPath); err == nil {
+		if err := v.ReadInConfig(); err != nil {
+			return fmt.Errorf("reading config: %w", err)
+		}
+	}
+
+	// Set the model for the engine
+	v.Set("models."+engine, model)
+
+	// Ensure directory exists
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
+	}
+
+	// Write config
+	if err := v.WriteConfigAs(configPath); err != nil {
+		return fmt.Errorf("writing config: %w", err)
+	}
+
+	return nil
+}
+
+// SetDefaultEngine sets the default AI engine in the specified config file.
+func SetDefaultEngine(configPath, engine string) error {
+	v := viper.New()
+	v.SetConfigType("yaml")
+	v.SetConfigFile(configPath)
+
+	// Read existing config if it exists
+	if _, err := os.Stat(configPath); err == nil {
+		if err := v.ReadInConfig(); err != nil {
+			return fmt.Errorf("reading config: %w", err)
+		}
+	}
+
+	v.Set("ai_engine", engine)
+
+	// Ensure directory exists
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
+	}
+
+	if err := v.WriteConfigAs(configPath); err != nil {
+		return fmt.Errorf("writing config: %w", err)
+	}
+
+	return nil
+}
+
+// WriteDefaultConfig writes a default config file to the specified path.
+func WriteDefaultConfig(configPath string) error {
+	dir := filepath.Dir(configPath)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("creating config directory: %w", err)
+	}
+
+	content := `# Ralphy configuration
+# This file can be placed at:
+#   - ~/.config/ralphy/ralphy.yaml (global)
+#   - ./ralphy.yaml (project-local, overrides global)
+
+# Default AI engine: claude, opencode, codex, cursor
+ai_engine: claude
+
+# Per-engine model defaults
+# These are used when no --model flag is provided
+models:
+  claude: ""
+  opencode: ""
+  codex: ""
+  cursor: ""
+
+# Task source
+prd_source: markdown
+prd_file: PRD.md
+
+# Workflow
+skip_tests: false
+skip_lint: false
+dry_run: false
+max_iterations: 0
+max_retries: 3
+retry_delay: 5
+verbose: false
+
+# Parallel execution
+parallel: false
+max_parallel: 3
+
+# Git workflow
+branch_per_task: false
+base_branch: ""
+create_pr: false
+pr_draft: false
+
+# GitHub integration
+github_repo: ""
+github_label: ""
+# Supports GITHUB_TOKEN, GH_TOKEN env vars, or explicit value here
+github_token: ""
+`
+	return os.WriteFile(configPath, []byte(content), 0o644)
+}
+
+// ConfigExists checks if a config file exists at the given path.
+func ConfigExists(configPath string) bool {
+	_, err := os.Stat(configPath)
+	return err == nil
 }

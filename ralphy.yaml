@@ -1,13 +1,25 @@
 # Ralphy configuration
-# Values here are used as defaults and can be overridden by flags or env vars.
+# This file can be placed at:
+#   - ~/.config/ralphy/ralphy.yaml (global)
+#   - ./ralphy.yaml (project-local, overrides global)
+#
+# Config precedence (highest to lowest):
+#   1. Command-line flags
+#   2. Environment variables
+#   3. Local config (./ralphy.yaml)
+#   4. Global config (~/.config/ralphy/ralphy.yaml)
 
 # AI engine: claude, opencode, cursor, codex
 ai_engine: claude
 
-# Model to use (optional, uses engine default if not set)
-# Claude: opus, sonnet, or full name like claude-sonnet-4-5-20250929
-# OpenCode: anthropic/claude-sonnet-4-5, openai/gpt-5.2
-model: ""
+# Per-engine model defaults
+# Use `ralphy models --<engine>` to list available models
+# Use `ralphy models --<engine> --set-default` to set interactively
+models:
+  claude: ""      # e.g., opus, sonnet, haiku
+  opencode: ""    # e.g., anthropic/claude-sonnet-4-5, openai/gpt-5.2
+  codex: ""
+  cursor: ""
 
 # Task source: markdown, yaml, github
 prd_source: markdown

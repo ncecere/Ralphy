@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.3.2] - 2025-01-18
+
+### Added
+
+- `ralphy init` command to create config files
+  - `--local` flag for project config (./ralphy.yaml)
+  - Default creates global config (~/.config/ralphy/ralphy.yaml)
+  - `--engine` and `--model` flags to set defaults during init
+
+- `ralphy models` command to list and set default models
+  - `ralphy models --opencode` - lists models from OpenCode CLI
+  - `ralphy models --claude` - shows Claude aliases (opus, sonnet, haiku)
+  - `--set-default` for interactive model selection
+  - `--model` with `--set-default` for non-interactive setting
+  - `--local` to save to project config instead of global
+
+- Per-engine model defaults in config
+  ```yaml
+  models:
+    claude: sonnet
+    opencode: anthropic/claude-sonnet-4-5
+  ```
+
+- Config precedence: flags > env > local config > global config
+
 ## [0.3.1] - 2025-01-17
 
 ### Fixed
@@ -62,7 +87,8 @@ ralphy --opencode --model openai/gpt-5.2
 - Example PRD.md and tasks.yaml files
 - Configuration file reference
 
-[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.3.1...HEAD
+[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.3.2...HEAD
+[0.3.2]: https://github.com/ncecere/ralphy/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/ncecere/ralphy/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ncecere/ralphy/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/ncecere/ralphy/compare/v0.1.0...v0.2.0
