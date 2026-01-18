@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/viper"
 )
 
-const Version = "0.3.2"
+const Version = "0.4.0"
 
 // GlobalConfigDir returns the global config directory path.
 func GlobalConfigDir() string {
@@ -128,7 +128,14 @@ func DefaultConfig() Config {
 	}
 }
 
+// Load loads configuration from default locations.
 func Load() (Config, error) {
+	return LoadWithFile("")
+}
+
+// LoadWithFile loads configuration, optionally using a specific config file.
+// If configFile is provided, it takes highest priority after environment variables.
+func LoadWithFile(configFile string) (Config, error) {
 	cfg := DefaultConfig()
 
 	v := viper.New()
@@ -140,21 +147,29 @@ func Load() (Config, error) {
 
 	setDefaults(v, cfg)
 
-	// Load global config first (lowest priority)
-	globalPath := GlobalConfigPath()
-	if _, err := os.Stat(globalPath); err == nil {
-		v.SetConfigFile(globalPath)
+	// If explicit config file provided, use only that
+	if configFile != "" {
+		v.SetConfigFile(configFile)
 		if err := v.ReadInConfig(); err != nil {
-			return cfg, fmt.Errorf("reading global config: %w", err)
+			return cfg, fmt.Errorf("reading config file %s: %w", configFile, err)
 		}
-	}
+	} else {
+		// Load global config first (lowest priority)
+		globalPath := GlobalConfigPath()
+		if _, err := os.Stat(globalPath); err == nil {
+			v.SetConfigFile(globalPath)
+			if err := v.ReadInConfig(); err != nil {
+				return cfg, fmt.Errorf("reading global config: %w", err)
+			}
+		}
 
-	// Load local config (higher priority, merges with global)
-	localPath := LocalConfigPath()
-	if _, err := os.Stat(localPath); err == nil {
-		v.SetConfigFile(localPath)
-		if err := v.MergeInConfig(); err != nil {
-			return cfg, fmt.Errorf("reading local config: %w", err)
+		// Load local config (higher priority, merges with global)
+		localPath := LocalConfigPath()
+		if _, err := os.Stat(localPath); err == nil {
+			v.SetConfigFile(localPath)
+			if err := v.MergeInConfig(); err != nil {
+				return cfg, fmt.Errorf("reading local config: %w", err)
+			}
 		}
 	}
 

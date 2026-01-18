@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var configFile string
+
 var rootCmd = &cobra.Command{
 	Use:           "ralphy",
 	Short:         "Autonomous AI coding loop",
@@ -16,7 +18,7 @@ var rootCmd = &cobra.Command{
 	SilenceErrors: true,
 	Version:       config.Version,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		cfg, err := config.Load()
+		cfg, err := config.LoadWithFile(configFile)
 		if err != nil {
 			return err
 		}
@@ -30,6 +32,7 @@ var rootCmd = &cobra.Command{
 }
 
 func init() {
+	rootCmd.PersistentFlags().StringVar(&configFile, "config", "", "Path to config file (overrides default locations)")
 	config.BindFlags(rootCmd)
 }
 

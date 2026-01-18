@@ -7,6 +7,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2025-01-18
+
+### Added
+
+- **`ralphy doctor` command** - Verify system dependencies and configuration
+  - Checks AI engine CLIs (claude, opencode, codex, cursor)
+  - Checks Git installation and user configuration
+  - Checks GitHub CLI and authentication status
+  - Checks GitHub token availability
+  - Checks global and local config file presence
+  - Color-coded output with pass/warn/error status
+
+- **`ralphy config` command** - Manage and inspect configuration
+  - `ralphy config show` - Display effective merged configuration
+  - `ralphy config show --sources` - Show source of each value (env/local/global/default)
+  - `ralphy config show --yaml` - Output configuration as YAML
+  - `ralphy config validate` - Validate configuration files
+    - Checks YAML syntax
+    - Warns on unknown keys
+    - Validates enum values (ai_engine, prd_source)
+    - Checks file paths exist
+
+- **`ralphy tasks` command** - Preview tasks without running
+  - `ralphy tasks list` - List all tasks with status
+  - `ralphy tasks list --pending` - Show only pending tasks
+  - `ralphy tasks list --completed` - Show only completed tasks
+  - `ralphy tasks list --count` - Show task counts only
+  - `ralphy tasks next` - Show the next task that would execute
+  - Supports `--prd`, `--yaml`, `--github` flags to specify source
+
+- **`--config` flag** - Specify alternate config file path
+  - Works with all commands
+  - Overrides default config file locations
+  - Example: `ralphy --config /path/to/config.yaml --claude`
+
 ## [0.3.2] - 2025-01-18
 
 ### Added
@@ -133,7 +168,8 @@ ralphy --codex --model o4-mini
 - Example tasks.yaml file with parallel groups
 - Configuration file reference
 
-[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.3.2...HEAD
+[Unreleased]: https://github.com/ncecere/ralphy/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/ncecere/ralphy/compare/v0.3.2...v0.4.0
 [0.3.2]: https://github.com/ncecere/ralphy/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/ncecere/ralphy/compare/v0.3.0...v0.3.1
 [0.3.0]: https://github.com/ncecere/ralphy/compare/v0.2.0...v0.3.0

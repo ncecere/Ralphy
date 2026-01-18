@@ -12,6 +12,7 @@ Autonomous AI coding loop that runs AI assistants (Claude Code, OpenCode, Codex,
 - **Desktop Notifications**: Get notified when tasks complete
 - **Activity Monitoring**: Live heartbeat indicator shows engine activity
 - **Per-Engine Model Defaults**: Configure default models for each AI engine
+- **Developer Tools**: Doctor command, config validation, task preview
 
 ## Table of Contents
 
@@ -21,6 +22,9 @@ Autonomous AI coding loop that runs AI assistants (Claude Code, OpenCode, Codex,
   - [Main Command](#main-command-ralphy)
   - [Initialize Config](#initialize-config-ralphy-init)
   - [List Models](#list-models-ralphy-models)
+  - [Doctor](#check-dependencies-ralphy-doctor)
+  - [Config Management](#config-management-ralphy-config)
+  - [Task Preview](#task-preview-ralphy-tasks)
 - [Configuration](#configuration)
   - [Config Precedence](#config-precedence)
   - [Config File Reference](#config-file-reference)
@@ -131,6 +135,7 @@ ralphy [flags]
 | `--cursor` | Use Cursor agent |
 | `--agent` | Alias for `--cursor` |
 | `--model <name>` | Model to use (overrides config default) |
+| `--config <file>` | Path to config file (overrides default locations) |
 
 #### Model Examples
 
@@ -285,6 +290,160 @@ ralphy models --opencode --set-default --model anthropic/claude-sonnet-4-5 --loc
 | OpenCode | Live from `opencode models` CLI command |
 | Codex | Not available (use `codex --help`) |
 | Cursor | Not available (check Cursor settings) |
+
+---
+
+### Check Dependencies: `ralphy doctor`
+
+Verify that all required dependencies are installed and configured correctly.
+
+```bash
+ralphy doctor
+```
+
+Checks performed:
+- **AI Engines**: Claude Code, OpenCode, Codex, Cursor CLI availability
+- **Git**: Installation and user configuration
+- **GitHub**: CLI installation, authentication status, token availability
+- **Configuration**: Global and local config file presence
+
+#### Example Output
+
+```
+Ralphy Doctor
+=============
+
+AI Engines:
+  ✓ Claude Code          2.1.7 (/opt/homebrew/bin/claude)
+  ✓ OpenCode             1.1.25 (/opt/homebrew/bin/opencode)
+  ✓ Codex                codex-cli 0.63.0 (/opt/homebrew/bin/codex)
+  ! Cursor               not found in PATH
+
+Git:
+  ✓ Git                  git version 2.48.1 (/usr/bin/git)
+  ✓ Git config           Your Name <you@example.com>
+
+GitHub:
+  ✓ GitHub CLI           gh version 2.40.0 (/usr/bin/gh)
+  ✓ GitHub CLI auth      Logged in to github.com
+  ✓ GitHub token         found in environment (ghp_...xxxx)
+
+Configuration:
+  ✓ Global config        /home/user/.config/ralphy/ralphy.yaml
+  ✓ Local config         ralphy.yaml
+
+Summary:
+  10 passed, 1 warnings, 0 errors
+```
+
+---
+
+### Config Management: `ralphy config`
+
+View and validate configuration.
+
+#### Show Configuration
+
+Display the effective configuration after merging all sources:
+
+```bash
+# Show merged configuration
+ralphy config show
+
+# Show with source annotations (env/local/global/default)
+ralphy config show --sources
+
+# Output as YAML
+ralphy config show --yaml
+```
+
+#### Validate Configuration
+
+Check configuration files for errors:
+
+```bash
+ralphy config validate
+```
+
+Validates:
+- YAML syntax
+- Known configuration keys (warns on unknown keys)
+- Valid values for enums (`ai_engine`, `prd_source`)
+- File paths exist (when applicable)
+
+#### Example: Config Show with Sources
+
+```
+Configuration with Sources
+==========================
+
+AI Engine:
+  ai_engine:           claude               [local]
+  models.claude:       sonnet               [local]
+  models.opencode:                          [default]
+
+Task Source:
+  prd_source:          markdown             [local]
+  prd_file:            PRD.md               [local]
+
+Workflow:
+  skip_tests:          false                [default]
+  max_retries:         3                    [global]
+  verbose:             true                 [env]
+```
+
+---
+
+### Task Preview: `ralphy tasks`
+
+List and preview tasks without running them.
+
+#### List Tasks
+
+```bash
+# List all tasks from default source
+ralphy tasks list
+
+# List tasks from a specific file
+ralphy tasks list --prd myproject.md
+ralphy tasks list --yaml tasks.yaml
+
+# List only pending or completed tasks
+ralphy tasks list --pending
+ralphy tasks list --completed
+
+# Show only counts
+ralphy tasks list --count
+```
+
+#### Show Next Task
+
+```bash
+# Show what task would run next
+ralphy tasks next
+
+# With a specific source
+ralphy tasks next --yaml tasks.yaml
+```
+
+#### Example Output
+
+```
+Tasks from examples/tasks.yaml
+===============================
+
+Pending:
+  1. [ ] Initialize Go module and project structure [group 1]
+  2. [ ] Set up configuration management with Viper [group 1]
+  3. [ ] Create database connection pool [group 1]
+  4. [ ] Implement user authentication [group 2]
+
+Completed:
+  1. [x] Research best practices
+  2. [x] Design database schema
+
+Summary: 4 pending, 2 completed
+```
 
 ---
 
