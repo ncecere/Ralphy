@@ -1,15 +1,38 @@
 # Ralphy
 
-Autonomous AI coding loop that runs AI assistants to work through tasks until a PRD is complete.
+Autonomous AI coding loop that runs AI assistants (Claude Code, OpenCode, Codex, Cursor) to work through tasks until a PRD is complete.
 
 ## Features
 
 - **Multiple AI Engines**: Support for Claude Code, OpenCode, Codex, and Cursor
 - **Flexible Task Sources**: Read tasks from Markdown PRDs, YAML files, or GitHub issues
 - **Git Integration**: Automatic branch creation and PR workflows
-- **Parallel Execution**: Run independent tasks concurrently
+- **Parallel Execution**: Run independent tasks concurrently with git worktrees
 - **Retry Logic**: Automatic retries with configurable delays
 - **Desktop Notifications**: Get notified when tasks complete
+- **Activity Monitoring**: Live heartbeat indicator shows engine activity
+- **Per-Engine Model Defaults**: Configure default models for each AI engine
+
+## Table of Contents
+
+- [Installation](#installation)
+- [Quick Start](#quick-start)
+- [Commands](#commands)
+  - [Main Command](#main-command-ralphy)
+  - [Initialize Config](#initialize-config-ralphy-init)
+  - [List Models](#list-models-ralphy-models)
+- [Configuration](#configuration)
+  - [Config Precedence](#config-precedence)
+  - [Config File Reference](#config-file-reference)
+  - [Environment Variables](#environment-variables)
+  - [GitHub Authentication](#github-authentication)
+- [Task Formats](#task-formats)
+  - [Markdown PRD](#markdown-prd)
+  - [YAML Tasks](#yaml-tasks)
+  - [GitHub Issues](#github-issues)
+- [Examples](#examples)
+- [Requirements](#requirements)
+- [License](#license)
 
 ## Installation
 
@@ -52,7 +75,7 @@ sudo cp build/ralphy /usr/local/bin/
 
 ## Quick Start
 
-1. Create a `PRD.md` file with tasks:
+1. **Create a PRD file** with tasks:
 
 ```markdown
 # My Project PRD
@@ -65,29 +88,40 @@ sudo cp build/ralphy /usr/local/bin/
 - [x] Set up project structure (completed)
 ```
 
-2. Initialize config (optional):
+2. **Initialize config** (optional but recommended):
 
 ```bash
-# Create global config
+# Create global config (~/.config/ralphy/ralphy.yaml)
 ralphy init
 
-# Or create project-local config
+# Or create project-local config (./ralphy.yaml)
 ralphy init --local
+
+# Set your preferred engine and model
+ralphy init --engine claude --model sonnet
 ```
 
-3. Run ralphy:
+3. **Run ralphy**:
 
 ```bash
+# Run with Claude Code
 ralphy --claude
+
+# Or if you set a default engine in config
+ralphy
 ```
 
-## Usage
+## Commands
+
+### Main Command: `ralphy`
+
+Run the autonomous AI coding loop.
 
 ```bash
 ralphy [flags]
 ```
 
-### AI Engine Flags
+#### AI Engine Flags
 
 | Flag | Description |
 |------|-------------|
@@ -96,7 +130,7 @@ ralphy [flags]
 | `--codex` | Use Codex CLI |
 | `--cursor` | Use Cursor agent |
 | `--agent` | Alias for `--cursor` |
-| `--model <name>` | Model to use (passed directly to the AI engine) |
+| `--model <name>` | Model to use (overrides config default) |
 
 #### Model Examples
 
@@ -104,19 +138,18 @@ ralphy [flags]
 # Claude Code - use alias or full model name
 ralphy --claude --model opus
 ralphy --claude --model sonnet
+ralphy --claude --model haiku
 ralphy --claude --model claude-sonnet-4-5-20250929
 
 # OpenCode - use provider/model format
 ralphy --opencode --model anthropic/claude-sonnet-4-5
-ralphy --opencode --model openai/gpt-5.2
+ralphy --opencode --model openai/gpt-4o
 
 # Codex
 ralphy --codex --model o4-mini
 ```
 
-Run `claude --help`, `opencode models`, or `codex --help` to see available models for each engine.
-
-### Task Source Flags
+#### Task Source Flags
 
 | Flag | Description |
 |------|-------------|
@@ -125,12 +158,12 @@ Run `claude --help`, `opencode models`, or `codex --help` to see available model
 | `--github <owner/repo>` | Fetch tasks from GitHub issues |
 | `--github-label <label>` | Filter GitHub issues by label |
 
-### Workflow Flags
+#### Workflow Flags
 
 | Flag | Description |
 |------|-------------|
 | `--dry-run` | Show what would be done without executing |
-| `--fast` | Skip tests and linting |
+| `--fast` | Skip tests and linting (equivalent to `--no-tests --no-lint`) |
 | `--no-tests`, `--skip-tests` | Skip writing and running tests |
 | `--no-lint`, `--skip-lint` | Skip linting |
 | `--max-iterations <n>` | Stop after N iterations (0 = unlimited) |
@@ -138,14 +171,20 @@ Run `claude --help`, `opencode models`, or `codex --help` to see available model
 | `--retry-delay <n>` | Seconds between retries (default: 5) |
 | `-v`, `--verbose` | Show debug output |
 
-### Parallel Execution Flags
+#### Parallel Execution Flags
 
 | Flag | Description |
 |------|-------------|
-| `--parallel` | Run independent tasks in parallel |
+| `--parallel` | Run independent tasks in parallel using git worktrees |
 | `--max-parallel <n>` | Max concurrent tasks (default: 3) |
 
-### Git Workflow Flags
+When running in parallel mode, Ralphy:
+1. Groups tasks by `parallel_group` (YAML) or runs all concurrently (Markdown/GitHub)
+2. Creates separate git worktrees for each concurrent task
+3. Merges completed branches back to the base branch
+4. Cleans up worktrees after completion
+
+#### Git Workflow Flags
 
 | Flag | Description |
 |------|-------------|
@@ -154,122 +193,239 @@ Run `claude --help`, `opencode models`, or `codex --help` to see available model
 | `--create-pr` | Create a pull request after each task |
 | `--draft-pr` | Create PRs as drafts |
 
-## Configuration
+---
 
-Ralphy supports configuration via (in order of priority):
-1. **Command-line flags** (highest priority)
-2. **Environment variables**
-3. **Local config** (`./ralphy.yaml`)
-4. **Global config** (`~/.config/ralphy/ralphy.yaml`) (lowest priority)
+### Initialize Config: `ralphy init`
 
-### Initialize Config
+Create a Ralphy configuration file.
 
 ```bash
-# Create global config (~/.config/ralphy/ralphy.yaml)
+ralphy init [flags]
+```
+
+#### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--local` | Create config in current directory (`./ralphy.yaml`) instead of global |
+| `--force` | Overwrite existing config file |
+| `--engine <name>` | Set default AI engine (`claude`, `opencode`, `codex`, `cursor`) |
+| `--model <name>` | Set default model for the engine (requires `--engine`) |
+
+#### Examples
+
+```bash
+# Create global config at ~/.config/ralphy/ralphy.yaml
 ralphy init
 
-# Create project-local config (./ralphy.yaml)
+# Create project-local config at ./ralphy.yaml
 ralphy init --local
 
-# Set default engine during init
+# Create config with defaults already set
 ralphy init --engine claude --model sonnet
+
+# Create local config for OpenCode project
+ralphy init --local --engine opencode --model anthropic/claude-sonnet-4-5
 
 # Overwrite existing config
 ralphy init --force
 ```
 
-### List and Set Models
+---
+
+### List Models: `ralphy models`
+
+List available models for an AI engine and optionally set a default.
 
 ```bash
-# List available models for an engine
-ralphy models --opencode
+ralphy models [flags]
+```
+
+#### Flags
+
+| Flag | Description |
+|------|-------------|
+| `--claude` | List Claude Code models |
+| `--opencode` | List OpenCode models (fetched live from CLI) |
+| `--codex` | List Codex models |
+| `--cursor` | List Cursor models |
+| `--set-default` | Interactively select and save a default model |
+| `--model <name>` | Model to set (use with `--set-default` for non-interactive) |
+| `--local` | Save to local config instead of global |
+
+#### Examples
+
+```bash
+# List available Claude models (aliases)
 ralphy models --claude
+# Output:
+# opus
+# sonnet
+# haiku
+
+# List available OpenCode models (live from CLI)
+ralphy models --opencode
 
 # Interactively select and save a default model
 ralphy models --opencode --set-default
+# Shows numbered list, prompts for selection
 
 # Non-interactively set a default model
-ralphy models --opencode --set-default --model anthropic/claude-sonnet-4-5
+ralphy models --claude --set-default --model sonnet
 
-# Save to local config instead of global
-ralphy models --claude --set-default --model sonnet --local
+# Save to local project config
+ralphy models --opencode --set-default --model anthropic/claude-sonnet-4-5 --local
 ```
 
-### Configuration File
+#### Model Sources
 
-Create a `ralphy.yaml` in your project root or use `ralphy init`.
+| Engine | Source |
+|--------|--------|
+| Claude Code | Built-in aliases: `opus`, `sonnet`, `haiku` |
+| OpenCode | Live from `opencode models` CLI command |
+| Codex | Not available (use `codex --help`) |
+| Cursor | Not available (check Cursor settings) |
+
+---
+
+## Configuration
+
+### Config Precedence
+
+Ralphy loads configuration from multiple sources. Higher priority sources override lower ones:
+
+1. **Command-line flags** (highest priority)
+2. **Environment variables** (`RALPHY_*`)
+3. **Local config** (`./ralphy.yaml` in current directory)
+4. **Global config** (`~/.config/ralphy/ralphy.yaml`)
+
+This allows you to:
+- Set global defaults in `~/.config/ralphy/ralphy.yaml`
+- Override per-project in `./ralphy.yaml`
+- Override for a single run with flags or env vars
+
+### Config File Reference
 
 ```yaml
-# AI engine: claude, opencode, cursor, codex
+# Ralphy configuration
+# Location: ~/.config/ralphy/ralphy.yaml (global)
+#       or: ./ralphy.yaml (project-local)
+
+# ==============================================================================
+# AI Engine Settings
+# ==============================================================================
+
+# Default AI engine: claude, opencode, codex, cursor
 ai_engine: claude
 
 # Per-engine model defaults
+# These are used when no --model flag is provided
+# Use `ralphy models --<engine>` to list available models
+# Use `ralphy models --<engine> --set-default` to set interactively
 models:
-  claude: sonnet
-  opencode: anthropic/claude-sonnet-4-5
-  codex: ""
+  claude: sonnet           # opus, sonnet, haiku, or full model name
+  opencode: ""             # e.g., anthropic/claude-sonnet-4-5, openai/gpt-4o
+  codex: ""                # e.g., o4-mini
   cursor: ""
 
-# Task source
+# ==============================================================================
+# Task Source Settings
+# ==============================================================================
+
+# Task source type: markdown, yaml, github
+prd_source: markdown
+
+# Path to task file (for markdown and yaml sources)
 prd_file: PRD.md
 
-# Workflow
+# GitHub integration (for github source)
+github_repo: ""            # e.g., owner/repo
+github_label: ""           # Filter issues by label
+github_token: ""           # Or use GITHUB_TOKEN/GH_TOKEN env var
+
+# ==============================================================================
+# Workflow Settings
+# ==============================================================================
+
+# Skip tests and linting
 skip_tests: false
 skip_lint: false
+
+# Preview mode - show what would be done without executing
 dry_run: false
+
+# Stop after N iterations (0 = unlimited)
 max_iterations: 0
-max_retries: 3
-retry_delay: 5
+
+# Retry settings for failed tasks
+max_retries: 3             # Max retries per task
+retry_delay: 5             # Seconds between retries
+
+# Debug output
 verbose: false
 
-# Parallel execution
+# ==============================================================================
+# Parallel Execution
+# ==============================================================================
+
+# Enable parallel task execution using git worktrees
 parallel: false
+
+# Maximum concurrent tasks
 max_parallel: 3
 
-# Git workflow
-branch_per_task: false
-base_branch: main
-create_pr: false
-pr_draft: false
+# ==============================================================================
+# Git Workflow
+# ==============================================================================
 
-# GitHub integration
-github_repo: ""
-github_label: ""
-github_token: ""
+# Create a new branch for each task
+branch_per_task: false
+
+# Base branch to create task branches from (empty = current branch)
+base_branch: ""
+
+# Automatically create pull requests after tasks complete
+create_pr: false
+
+# Create PRs as drafts
+pr_draft: false
 ```
 
 ### Environment Variables
 
 All configuration options can be set via environment variables with the `RALPHY_` prefix:
 
-| Environment Variable | Description |
-|---------------------|-------------|
-| `RALPHY_AI_ENGINE` | AI engine to use (`claude`, `opencode`, `cursor`, `codex`) |
-| `RALPHY_MODEL` | Model to use (e.g., `opus`, `sonnet`, `gpt-4o`) |
-| `RALPHY_PRD_FILE` | Path to PRD markdown file |
-| `RALPHY_SKIP_TESTS` | Skip running tests (`true`/`false`) |
-| `RALPHY_SKIP_LINT` | Skip linting (`true`/`false`) |
-| `RALPHY_DRY_RUN` | Preview mode without execution (`true`/`false`) |
-| `RALPHY_MAX_ITERATIONS` | Maximum iterations (0 = unlimited) |
-| `RALPHY_MAX_RETRIES` | Max retries per task |
-| `RALPHY_RETRY_DELAY` | Seconds between retries |
-| `RALPHY_VERBOSE` | Enable debug output (`true`/`false`) |
-| `RALPHY_PARALLEL` | Enable parallel execution (`true`/`false`) |
-| `RALPHY_MAX_PARALLEL` | Max concurrent tasks |
-| `RALPHY_BRANCH_PER_TASK` | Create branch per task (`true`/`false`) |
-| `RALPHY_BASE_BRANCH` | Base branch for task branches |
-| `RALPHY_CREATE_PR` | Create PRs after tasks (`true`/`false`) |
-| `RALPHY_PR_DRAFT` | Create PRs as drafts (`true`/`false`) |
-| `RALPHY_GITHUB_REPO` | GitHub repo for issues (`owner/repo`) |
-| `RALPHY_GITHUB_LABEL` | Filter issues by label |
+| Environment Variable | Config Key | Description |
+|---------------------|------------|-------------|
+| `RALPHY_AI_ENGINE` | `ai_engine` | Default AI engine |
+| `RALPHY_MODEL` | `model` | Model override (applies to any engine) |
+| `RALPHY_PRD_SOURCE` | `prd_source` | Task source type |
+| `RALPHY_PRD_FILE` | `prd_file` | Path to task file |
+| `RALPHY_SKIP_TESTS` | `skip_tests` | Skip tests (`true`/`false`) |
+| `RALPHY_SKIP_LINT` | `skip_lint` | Skip linting (`true`/`false`) |
+| `RALPHY_DRY_RUN` | `dry_run` | Preview mode (`true`/`false`) |
+| `RALPHY_MAX_ITERATIONS` | `max_iterations` | Max iterations (0 = unlimited) |
+| `RALPHY_MAX_RETRIES` | `max_retries` | Max retries per task |
+| `RALPHY_RETRY_DELAY` | `retry_delay` | Seconds between retries |
+| `RALPHY_VERBOSE` | `verbose` | Debug output (`true`/`false`) |
+| `RALPHY_PARALLEL` | `parallel` | Parallel execution (`true`/`false`) |
+| `RALPHY_MAX_PARALLEL` | `max_parallel` | Max concurrent tasks |
+| `RALPHY_BRANCH_PER_TASK` | `branch_per_task` | Branch per task (`true`/`false`) |
+| `RALPHY_BASE_BRANCH` | `base_branch` | Base branch for task branches |
+| `RALPHY_CREATE_PR` | `create_pr` | Create PRs (`true`/`false`) |
+| `RALPHY_PR_DRAFT` | `pr_draft` | Draft PRs (`true`/`false`) |
+| `RALPHY_GITHUB_REPO` | `github_repo` | GitHub repo (`owner/repo`) |
+| `RALPHY_GITHUB_LABEL` | `github_label` | GitHub issue label filter |
+| `GITHUB_TOKEN` | `github_token` | GitHub authentication token |
+| `GH_TOKEN` | `github_token` | GitHub CLI token (fallback) |
 
 ### GitHub Authentication
 
 For GitHub integration (fetching issues or creating PRs), Ralphy needs a GitHub token. It checks these sources in order:
 
-1. **`GITHUB_TOKEN`** environment variable (recommended)
-2. **`GH_TOKEN`** environment variable (used by GitHub CLI)
-3. **`github_token`** in `ralphy.yaml` config file
+1. `GITHUB_TOKEN` environment variable (recommended)
+2. `GH_TOKEN` environment variable (used by GitHub CLI)
+3. `github_token` in config file (not recommended for shared repos)
 
 ```bash
 # Option 1: Export token (recommended)
@@ -278,7 +434,7 @@ export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 # Option 2: Use GitHub CLI's token
 # If you've authenticated with `gh auth login`, Ralphy will use GH_TOKEN
 
-# Option 3: Add to ralphy.yaml (not recommended for shared repos)
+# Option 3: Add to config file (not recommended)
 # github_token: ghp_xxxxxxxxxxxxxxxxxxxx
 ```
 
@@ -290,98 +446,255 @@ export GITHUB_TOKEN=ghp_xxxxxxxxxxxxxxxxxxxx
 | Create PRs | `repo` |
 | Close issues | `repo` |
 
-To create a token, visit [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens).
+Create a token at [GitHub Settings > Developer settings > Personal access tokens](https://github.com/settings/tokens).
+
+---
 
 ## Task Formats
 
-See the [examples/](examples/) directory for complete example files.
+### Markdown PRD
 
-### Markdown (PRD.md)
+The simplest format. Tasks are markdown checkboxes:
 
 ```markdown
 # Project PRD
 
+## Overview
+
+Description of the project.
+
 ## Tasks
 
-- [ ] First task to complete
-- [ ] Second task to complete
-- [x] Already completed task
+### Phase 1: Setup
+
+- [ ] Initialize project structure
+- [ ] Set up configuration management
+- [ ] Create database connection
+
+### Phase 2: Features
+
+- [ ] Implement user authentication
+- [ ] Create API endpoints
+- [ ] Add validation
+
+## Completed
+
+- [x] Research best practices
+- [x] Design database schema
 ```
+
+**Rules:**
+- `- [ ]` = pending task (will be worked on)
+- `- [x]` = completed task (skipped)
+- Tasks are processed in order (top to bottom)
+- Ralphy marks tasks complete by changing `[ ]` to `[x]`
 
 See [examples/PRD.md](examples/PRD.md) for a full example.
 
-### YAML
+### YAML Tasks
+
+More structured format with metadata and parallel groups:
 
 ```yaml
+project: my-api
+version: "1.0"
+
 tasks:
-  - title: First task
-    status: pending
-  - title: Second task
-    status: pending
-  - title: Completed task
-    status: done
+  # Group 1: Setup (run in parallel)
+  - title: Initialize project structure
+    completed: false
+    parallel_group: 1
+    tags: [setup]
+
+  - title: Set up configuration
+    completed: false
+    parallel_group: 1
+    tags: [setup, config]
+
+  # Group 2: Features (run after group 1)
+  - title: Implement authentication
+    completed: false
+    parallel_group: 2
+    tags: [auth, api]
+    acceptance_criteria:
+      - Validate email format
+      - Hash passwords with bcrypt
+
+  - title: Create API endpoints
+    completed: false
+    parallel_group: 2
+    tags: [api]
+    subtasks:
+      - GET /api/items
+      - POST /api/items
+      - DELETE /api/items/:id
+
+metadata:
+  created_at: "2024-01-15"
+  owner: developer@example.com
 ```
 
-The YAML format supports additional metadata like `priority`, `tags`, `notes`, and `depends_on`.
+**Supported fields:**
+| Field | Required | Description |
+|-------|----------|-------------|
+| `title` | Yes | Task description (sent to AI) |
+| `completed` | No | `true`/`false` - whether task is done |
+| `parallel_group` | No | Integer - tasks with same group run concurrently |
+| `tags` | No | Array of tags (for documentation) |
+| `notes` | No | Additional notes (for documentation) |
+| `subtasks` | No | List of subtasks (for documentation) |
+| `acceptance_criteria` | No | List of acceptance criteria (for documentation) |
+| `depends_on` | No | Dependencies (for documentation) |
+| `priority` | No | Priority level (for documentation) |
+
+**Parallel Groups:**
+- Tasks with the same `parallel_group` number run concurrently
+- Groups are processed in numerical order (1, then 2, then 3...)
+- Tasks without a group run sequentially
+
 See [examples/tasks.yaml](examples/tasks.yaml) for a full example.
 
 ### GitHub Issues
 
-Tasks are fetched from open issues, ordered oldest-first:
+Fetch tasks from GitHub issues:
 
 ```bash
-ralphy --github owner/repo --github-label enhancement --claude
+# All open issues, oldest first
+ralphy --github owner/repo --claude
+
+# Filter by label
+ralphy --github owner/repo --github-label ai-task --claude
 ```
+
+**Behavior:**
+- Open issues are fetched, ordered by creation date (oldest first)
+- Issue title becomes the task description
+- Issue body is included as context
+- When a task completes, the issue is closed automatically
+- Use `--github-label` to filter to specific issues
+
+---
 
 ## Examples
 
 ### Basic Usage
 
 ```bash
-# Run with Claude Code on PRD.md
+# Run with Claude Code on default PRD.md
 ralphy --claude
 
 # Run with OpenCode on a custom file
 ralphy --opencode --prd tasks.md
 
+# Run with a specific model
+ralphy --claude --model opus
+
 # Dry run to see what would happen
 ralphy --claude --dry-run
+
+# Skip tests and linting for faster iteration
+ralphy --claude --fast
+
+# Verbose output for debugging
+ralphy --claude -v
+```
+
+### Using YAML Tasks
+
+```bash
+# Run with YAML task file
+ralphy --claude --yaml tasks.yaml
+
+# Parallel execution with YAML groups
+ralphy --claude --yaml tasks.yaml --parallel
 ```
 
 ### Git Workflow
 
 ```bash
-# Create a branch for each task and open PRs
-ralphy --claude --branch-per-task --create-pr --base-branch main
+# Create a branch for each task
+ralphy --claude --branch-per-task
 
-# Create draft PRs
-ralphy --claude --branch-per-task --create-pr --draft-pr
+# Create branches and PRs
+ralphy --claude --branch-per-task --create-pr
+
+# Create draft PRs from a specific base branch
+ralphy --claude --branch-per-task --create-pr --draft-pr --base-branch develop
 ```
 
 ### Parallel Execution
 
 ```bash
 # Run up to 3 tasks in parallel
-ralphy --claude --parallel --max-parallel 3
+ralphy --claude --parallel
+
+# Run up to 5 tasks in parallel
+ralphy --claude --parallel --max-parallel 5
+
+# Parallel with branch-per-task and PRs
+ralphy --claude --parallel --branch-per-task --create-pr
 ```
 
 ### GitHub Issues
 
 ```bash
-# Work through GitHub issues labeled "ai-task"
+# Work through all open issues
+ralphy --claude --github myorg/myrepo
+
+# Filter to issues labeled "ai-task"
+ralphy --claude --github myorg/myrepo --github-label ai-task
+
+# Create PRs for each issue
 ralphy --claude --github myorg/myrepo --github-label ai-task --create-pr
 ```
 
+### Configuration Workflows
+
+```bash
+# Set up global defaults once
+ralphy init --engine claude --model sonnet
+
+# Then just run with defaults
+ralphy
+
+# Override model for a specific run
+ralphy --model opus
+
+# Set up project-specific config
+cd my-project
+ralphy init --local --engine opencode --model anthropic/claude-sonnet-4-5
+
+# List and set models interactively
+ralphy models --opencode --set-default
+```
+
+---
+
 ## Requirements
 
-- Go 1.21+ (for building)
-- One of the supported AI CLI tools installed:
-  - [Claude Code](https://claude.ai/code)
-  - [OpenCode](https://github.com/opencode-ai/opencode)
-  - [Codex](https://github.com/openai/codex)
-  - [Cursor](https://cursor.sh/)
-- Git (for branch/PR workflows)
-- GitHub CLI (`gh`) for PR creation
+- **Go 1.21+** (for building from source)
+- **One of the supported AI CLI tools:**
+  - [Claude Code](https://claude.ai/code) - `claude` CLI
+  - [OpenCode](https://github.com/opencode-ai/opencode) - `opencode` CLI
+  - [Codex](https://github.com/openai/codex) - `codex` CLI
+  - [Cursor](https://cursor.sh/) - `cursor` CLI
+- **Git** (for branch/PR workflows)
+- **GitHub CLI** (`gh`) for PR creation
+
+---
+
+## Activity Indicator
+
+While running, Ralphy displays a spinner with an activity heartbeat:
+
+```
+⠋ Working on task: Implement authentication  ● active
+```
+
+- `● active` (green) - AI engine is actively outputting
+- `○ 5s ago` - Time since last output (helps identify stalls)
+
+---
 
 ## License
 

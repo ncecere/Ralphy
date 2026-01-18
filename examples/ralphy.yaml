@@ -1,0 +1,125 @@
+# Example Ralphy Configuration
+#
+# This file shows all available configuration options with descriptions.
+# Copy this to ~/.config/ralphy/ralphy.yaml (global) or ./ralphy.yaml (project).
+#
+# You can also generate a config file with: ralphy init
+#
+# Configuration precedence (highest to lowest):
+#   1. Command-line flags
+#   2. Environment variables (RALPHY_*)
+#   3. Local config (./ralphy.yaml)
+#   4. Global config (~/.config/ralphy/ralphy.yaml)
+
+# ==============================================================================
+# AI Engine Settings
+# ==============================================================================
+
+# Default AI engine to use
+# Options: claude, opencode, codex, cursor
+ai_engine: claude
+
+# Per-engine model defaults
+# These are used when no --model flag is provided
+# List available models with: ralphy models --<engine>
+# Set interactively with: ralphy models --<engine> --set-default
+models:
+  # Claude Code aliases: opus, sonnet, haiku
+  # Or use full model names like: claude-sonnet-4-5-20250929
+  claude: sonnet
+
+  # OpenCode uses provider/model format
+  # Examples: anthropic/claude-sonnet-4-5, openai/gpt-4o
+  # List all with: ralphy models --opencode
+  opencode: anthropic/claude-sonnet-4-5
+
+  # Codex models (check codex --help for available options)
+  codex: ""
+
+  # Cursor models (configured in Cursor app settings)
+  cursor: ""
+
+# ==============================================================================
+# Task Source Settings
+# ==============================================================================
+
+# Task source type
+# Options: markdown, yaml, github
+prd_source: markdown
+
+# Path to task file (for markdown and yaml sources)
+prd_file: PRD.md
+
+# GitHub integration settings (for github source)
+# Repository in owner/repo format
+github_repo: ""
+
+# Filter issues by label (optional)
+github_label: ""
+
+# GitHub authentication token
+# Recommended: Use GITHUB_TOKEN or GH_TOKEN environment variable instead
+# Required scopes: repo (for private repos) or public_repo (for public)
+github_token: ""
+
+# ==============================================================================
+# Workflow Settings
+# ==============================================================================
+
+# Skip running tests after each task
+skip_tests: false
+
+# Skip linting after each task
+skip_lint: false
+
+# Preview mode - show what would be done without executing
+dry_run: false
+
+# Stop after N iterations (0 = unlimited)
+# Useful for testing or limiting a run to a specific number of tasks
+max_iterations: 0
+
+# Retry settings for failed tasks
+# Max number of retries per task before giving up
+max_retries: 3
+
+# Seconds to wait between retries
+retry_delay: 5
+
+# Show detailed debug output
+verbose: false
+
+# ==============================================================================
+# Parallel Execution
+# ==============================================================================
+
+# Enable parallel task execution
+# Uses git worktrees to run multiple tasks concurrently
+# YAML tasks are grouped by parallel_group field
+# Markdown/GitHub tasks all run concurrently up to max_parallel
+parallel: false
+
+# Maximum number of concurrent tasks
+# Each parallel task gets its own git worktree
+max_parallel: 3
+
+# ==============================================================================
+# Git Workflow
+# ==============================================================================
+
+# Create a new git branch for each task
+# Branch names are generated from task titles
+branch_per_task: false
+
+# Base branch to create task branches from
+# Empty string means use current branch
+base_branch: main
+
+# Automatically create pull requests after tasks complete
+# Requires: branch_per_task: true
+# Requires: GitHub CLI (gh) installed and authenticated
+create_pr: false
+
+# Create PRs as drafts
+# Requires: create_pr: true
+pr_draft: false
