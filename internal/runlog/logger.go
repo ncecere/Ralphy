@@ -4,6 +4,7 @@ package runlog
 import (
 	"encoding/json"
 	"os"
+	"strings"
 	"time"
 )
 
@@ -135,11 +136,16 @@ func ReadLog(path string) ([]RunEntry, error) {
 	}
 
 	var entries []RunEntry
-	decoder := json.NewDecoder(&bytesReader{data: data})
 
-	for decoder.More() {
+	// Parse NDJSON (newline-delimited JSON)
+	lines := splitLines(string(data))
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
 		var entry RunEntry
-		if err := decoder.Decode(&entry); err != nil {
+		if err := json.Unmarshal([]byte(line), &entry); err != nil {
 			continue // Skip malformed entries
 		}
 		entries = append(entries, entry)
@@ -148,17 +154,17 @@ func ReadLog(path string) ([]RunEntry, error) {
 	return entries, nil
 }
 
-// bytesReader wraps a byte slice for json.Decoder.
-type bytesReader struct {
-	data []byte
-	pos  int
-}
-
-func (r *bytesReader) Read(p []byte) (n int, err error) {
-	if r.pos >= len(r.data) {
-		return 0, os.ErrClosed
+func splitLines(s string) []string {
+	var lines []string
+	start := 0
+	for i := 0; i < len(s); i++ {
+		if s[i] == '\n' {
+			lines = append(lines, s[start:i])
+			start = i + 1
+		}
 	}
-	n = copy(p, r.data[r.pos:])
-	r.pos += n
-	return n, nil
+	if start < len(s) {
+		lines = append(lines, s[start:])
+	}
+	return lines
 }

@@ -26,6 +26,7 @@ Autonomous AI coding loop that runs AI assistants (Claude Code, OpenCode, Codex,
   - [Doctor](#check-dependencies-ralphy-doctor)
   - [Config Management](#config-management-ralphy-config)
   - [Task Preview](#task-preview-ralphy-tasks)
+  - [Run History](#run-history-ralphy-runs)
 - [Configuration](#configuration)
   - [Config Precedence](#config-precedence)
   - [Config File Reference](#config-file-reference)
@@ -506,6 +507,82 @@ Completed:
   2. [x] Design database schema
 
 Summary: 4 pending, 2 completed
+```
+
+---
+
+### Run History: `ralphy runs`
+
+View and analyze run history from log files.
+
+#### List Recent Runs
+
+```bash
+# List recent runs (requires --log-file to have been used previously)
+ralphy runs list
+
+# Specify log file
+ralphy runs list --file ralphy-runs.log
+
+# Show more runs
+ralphy runs list --limit 20
+```
+
+Example output:
+```
+Run History (ralphy-runs.log)
+======================================================================
+
+#    Timestamp            Engine     Tasks    Cost       Duration
+----------------------------------------------------------------------
+1    2025-01-18 12:00     opencode   1/2      $0.0120    2m 35s
+2    2025-01-18 10:00     claude     1/1      $0.0045    48.2s
+
+Showing 2 of 2 runs. Use --limit to see more.
+```
+
+#### Show Run Details
+
+```bash
+# Show most recent run
+ralphy runs show
+
+# Show specific run (1 = most recent)
+ralphy runs show 2
+
+# Output as JSON
+ralphy runs show --json
+```
+
+#### Aggregate Summary
+
+```bash
+ralphy runs summary --file ralphy-runs.log
+```
+
+Example output:
+```
+Run History Summary
+==================================================
+
+Overview:
+  Total Runs:     10
+  Date Range:     2025-01-15 to 2025-01-18
+  Total Duration: 45m 30s
+
+Tasks:
+  Total:          25
+  Succeeded:      23 (92.0%)
+  Failed:         2 (8.0%)
+
+Cost:
+  Total:          $0.1250
+  Avg per Run:    $0.0125
+  Avg per Task:   $0.0050
+
+Engines Used:
+  claude       7 runs (70.0%)
+  opencode     3 runs (30.0%)
 ```
 
 ---
